@@ -1,0 +1,105 @@
+import customtkinter as ctk
+from tkinter import messagebox
+from conta_bancaria import Conta_bancaria
+
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("blue")
+
+
+class MenuFinanceiro(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        self.title("Gestão Financeira Pessoal")
+        self.geometry("720x500")
+
+        self.conta = None
+
+        # --- Tela de Login ---
+        self.tela_login = ctk.CTkFrame(self)  # Tela de login
+        self.tela_login.pack(padx=30, pady=30)
+
+        ctk.CTkLabel(self.tela_login, text="Usuário").grid(row=0, column=0, padx=10, pady=10)
+        self.entrada_nome = ctk.CTkEntry(self.tela_login, width=240)  # Nome do usuário
+        self.entrada_nome.grid(row=0, column=1, padx=10, pady=10)
+
+        ctk.CTkLabel(self.tela_login, text="Número da conta").grid(row=1, column=0, padx=10, pady=10)
+        self.entrada_conta = ctk.CTkEntry(self.tela_login, width=240)  # Número da conta
+        self.entrada_conta.grid(row=1, column=1, padx=10, pady=10)
+
+        ctk.CTkButton(
+            self.tela_login, text="Acessar Conta", command=self.entrar
+        ).grid(row=2, column=0, columnspan=2, pady=15) # Botao de acesso a conta
+
+        
+        # --- Tela Menu Principal ------------------------------------------------------
+        self.tela_menu = ctk.CTkFrame(self)  # Tela principal
+
+        self.lbl_saldo = ctk.CTkLabel(self.tela_menu, text="", font=("Arial", 16, "bold"))
+        self.lbl_saldo.grid(row=0, column=0, columnspan=3, padx=10, pady=10, sticky="w")
+
+        self.entrada_desc = ctk.CTkEntry(self.tela_menu, placeholder_text="Descrição", width=200)  # Descrição da transação
+        self.entrada_desc.grid(row=1, column=0, padx=6, pady=6)
+
+        self.entrada_valor = ctk.CTkEntry(self.tela_menu, placeholder_text="Valor", width=130)  # Valor da transação
+        self.entrada_valor.grid(row=1, column=1, padx=6, pady=6)
+
+        self.entrada_cat = ctk.CTkEntry(self.tela_menu, placeholder_text="Categoria", width=150)  # Categoria da transação
+        self.entrada_cat.grid(row=1, column=2, padx=6, pady=6)
+
+        ctk.CTkButton(
+            self.tela_menu, text="+ Receita", fg_color="green", command=lambda: self.lancar("receita")
+        ).grid(row=2, column=0, pady=6) # Botao de lançamento de receita
+
+        ctk.CTkButton(
+            self.tela_menu, text="- Despesa", fg_color="red", command=lambda: self.lancar("despesa")
+        ).grid(row=2, column=1, pady=6) # Botao de lançamento de despesa
+
+        self.historico = ctk.CTkTextbox(self.tela_menu, width=640, height=240) # Caixa de texto para exibir o histórico de transações
+        self.historico.grid(row=3, column=0, columnspan=3, padx=10, pady=15)
+
+    #----------------------------------------------------------------------------
+
+    def atualizar(self):
+        self.lbl_saldo.configure(
+            text=f"Usuário: {self.conta._usuario} | Conta: {self.conta._numero_conta} | Saldo: R$ {self.conta._saldo:.2f}"
+        )
+        self.historico.configure(state="normal") #Abrir o histórico para edição
+        self.historico.delete("1.0", "end") #Apagar o conteúdo atual do histórico
+        for t in self.conta.informacoes_do_usuario.lista_de_transacoes:
+            self.historico.insert("end", f"{t['descricao']} | R$ {float(t['valor']):.2f} | {t['categoria']}\n")
+        self.historico.configure(state="disabled") # Bloquear o histórico para edição, tornando-o somente leitura
+
+    def lancar(self, tipo):
+        desc = self.entrada_desc.get().strip()  # Pega descrição da transação
+        cat = self.entrada_cat.get().strip()  # Pega categoria da transação
+        try:
+            valor = float(self.entrada_valor.get().replace(",", "."))  # Pega valor da transação
+        except ValueError:
+            messagebox.showerror("Erro", "Digite um valor válido.")
+            return
+
+        if not desc or not cat or valor <= 0:
+            messagebox.showwarning("Atenção", "Preencha tudo corretamente.")
+            return
+
+        if tipo == "receita":
+            self.conta.processar_receitas(desc, valor, cat)
+        else:
+            self.conta.processar_despesas(desc, valor, cat)
+
+        self.entrada_desc.delete(0, "end")
+        self.entrada_valor.delete(0, "end")
+        self.entrada_cat.delete(0, "end")
+        self.atualizar()
+
+    def entrar(self):
+        nome = self.entrada_nome.get().strip()  # Pega nome do usuário
+        num = self.entrada_conta.get().strip()  # Pega número da conta
+        if not nome or not num:
+            messagebox.showwarning("Atenção", "Informe usuário e conta.")
+            return
+
+        self.conta = Conta_bancaria(nome, num)  # Cria uma nova instância da classe Conta_bancaria com o nome e número da conta fornecidos
+        self.tela_login.pack_forget()  # Oculta a tela de login
+        self.tela_menu.pack(padx=20, pady=20)  # Exibe a tela principal
+        self.atualizar()
