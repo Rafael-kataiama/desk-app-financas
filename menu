@@ -18,19 +18,25 @@ class MenuFinanceiro(ctk.CTk):
         self.tela_login = ctk.CTkFrame(self)  # Tela de login
         self.tela_login.pack(padx=30, pady=30)
 
-        ctk.CTkLabel(self.tela_login, text="Usuário").grid(row=0, column=0, padx=10, pady=10)
-        self.entrada_nome = ctk.CTkEntry(self.tela_login, width=240)  # Nome do usuário
-        self.entrada_nome.grid(row=0, column=1, padx=10, pady=10)
+        self.lbl_titulo_login = ctk.CTkLabel(
+            self.tela_login,
+            text="Aplicativo Finanças Pessoal",
+            font=("Arial", 20, "bold"),
+        )
+        self.lbl_titulo_login.grid(row=0, column=0, columnspan=2, padx=15, pady=(18, 12))
 
-        ctk.CTkLabel(self.tela_login, text="Número da conta").grid(row=1, column=0, padx=10, pady=10)
+        ctk.CTkLabel(self.tela_login, text="Usuário").grid(row=1, column=0, padx=10, pady=10)
+        self.entrada_nome = ctk.CTkEntry(self.tela_login, width=240)  # Nome do usuário
+        self.entrada_nome.grid(row=1, column=1, padx=10, pady=10)
+
+        ctk.CTkLabel(self.tela_login, text="Número da conta").grid(row=2, column=0, padx=10, pady=10)
         self.entrada_conta = ctk.CTkEntry(self.tela_login, width=240)  # Número da conta
-        self.entrada_conta.grid(row=1, column=1, padx=10, pady=10)
+        self.entrada_conta.grid(row=2, column=1, padx=10, pady=10)
 
         ctk.CTkButton(
             self.tela_login, text="Acessar Conta", command=self.entrar
-        ).grid(row=2, column=0, columnspan=2, pady=15) # Botao de acesso a conta
+        ).grid(row=3, column=0, columnspan=2, pady=15)  # Botão de acesso à conta
 
-        
         # --- Tela Menu Principal ------------------------------------------------------
         self.tela_menu = ctk.CTkFrame(self)  # Tela principal
 
@@ -48,26 +54,30 @@ class MenuFinanceiro(ctk.CTk):
 
         ctk.CTkButton(
             self.tela_menu, text="+ Receita", fg_color="green", command=lambda: self.lancar("receita")
-        ).grid(row=2, column=0, pady=6) # Botao de lançamento de receita
+        ).grid(row=2, column=0, pady=6)  # Botão de lançamento de receita
 
         ctk.CTkButton(
             self.tela_menu, text="- Despesa", fg_color="red", command=lambda: self.lancar("despesa")
-        ).grid(row=2, column=1, pady=6) # Botao de lançamento de despesa
+        ).grid(row=2, column=1, pady=6)  # Botão de lançamento de despesa
 
-        self.historico = ctk.CTkTextbox(self.tela_menu, width=640, height=240) # Caixa de texto para exibir o histórico de transações
+        ctk.CTkButton(
+            self.tela_menu, text="Sair", fg_color="gray30", command=self.sair
+        ).grid(row=2, column=2, pady=6)  # Botão de logout para voltar ao login
+
+        self.historico = ctk.CTkTextbox(self.tela_menu, width=640, height=240)  # Caixa de texto para exibir o histórico
         self.historico.grid(row=3, column=0, columnspan=3, padx=10, pady=15)
 
-    #----------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------
 
     def atualizar(self):
         self.lbl_saldo.configure(
             text=f"Usuário: {self.conta._usuario} | Conta: {self.conta._numero_conta} | Saldo: R$ {self.conta._saldo:.2f}"
         )
-        self.historico.configure(state="normal") #Abrir o histórico para edição
-        self.historico.delete("1.0", "end") #Apagar o conteúdo atual do histórico
+        self.historico.configure(state="normal")  # Abrir o histórico para edição
+        self.historico.delete("1.0", "end")  # Apagar o conteúdo atual do histórico
         for t in self.conta.informacoes_do_usuario.lista_de_transacoes:
             self.historico.insert("end", f"{t['descricao']} | R$ {float(t['valor']):.2f} | {t['categoria']}\n")
-        self.historico.configure(state="disabled") # Bloquear o histórico para edição, tornando-o somente leitura
+        self.historico.configure(state="disabled")  # Bloquear o histórico para edição
 
     def lancar(self, tipo):
         desc = self.entrada_desc.get().strip()  # Pega descrição da transação
@@ -99,7 +109,20 @@ class MenuFinanceiro(ctk.CTk):
             messagebox.showwarning("Atenção", "Informe usuário e conta.")
             return
 
-        self.conta = Conta_bancaria(nome, num)  # Cria uma nova instância da classe Conta_bancaria com o nome e número da conta fornecidos
+        self.conta = Conta_bancaria(nome, num)  # Cria instância da conta
         self.tela_login.pack_forget()  # Oculta a tela de login
         self.tela_menu.pack(padx=20, pady=20)  # Exibe a tela principal
         self.atualizar()
+
+    def sair(self):
+        self.conta = None
+        self.entrada_desc.delete(0, "end") #apaga os campos de entrada de descrição, valor e categoria
+        self.entrada_valor.delete(0, "end") #apaga os campos de entrada de descrição, valor e categoria
+        self.entrada_cat.delete(0, "end") #apaga os campos de entrada de descrição, valor e categoria
+
+        self.historico.configure(state="normal") #abre o histórico para edição
+        self.historico.delete("1.0", "end") #apaga o conteúdo atual do histórico
+        self.historico.configure(state="disabled") #desabilita o histórico para edição
+
+        self.tela_menu.pack_forget() #oculta a tela principal
+        self.tela_login.pack(padx=30, pady=30) #exibe a tela de login
